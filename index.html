@@ -1,0 +1,153 @@
+<!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Snake &amp; Ladder: Informatika Adventure</title>
+<style>
+:root{--bg:#e8f6ff;--card:#fff;--tx:#1b2a41;--ac:#ff8a00;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#10223a;--card:#1c3354;--tx:#eef5ff;color-scheme:dark}}
+:root[data-theme=dark]{--bg:#10223a;--card:#1c3354;--tx:#eef5ff;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--tx)}
+.w{max-width:1100px;margin:auto;padding:10px}
+button{font:inherit;font-weight:700;border:0;border-radius:12px;padding:10px 16px;background:var(--ac);color:#fff;cursor:pointer}
+button:disabled{opacity:.55;cursor:not-allowed}
+input,select{font:inherit;padding:8px;border-radius:8px;border:1px solid #8aa;width:min(300px,90%);background:var(--card);color:var(--tx)}
+.card{background:var(--card);border-radius:16px;padding:14px;box-shadow:0 2px 8px #0003}
+#menu,#setup{flex-direction:column;align-items:center;gap:10px;text-align:center}
+#menu button{width:min(300px,90%)}#setup{display:none}
+h1{margin:6px;font-size:clamp(22px,5vw,40px)}
+#game{display:none;gap:10px;flex-wrap:wrap}
+#bw{flex:1 1 340px;max-width:min(94vw,640px)}
+#bd{position:relative;aspect-ratio:1;width:100%;border-radius:12px;overflow:hidden;border:4px solid #7a4a21}
+#gr{display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(10,1fr);position:absolute;inset:0}
+#sv{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
+.c{position:relative;font-size:clamp(7px,1.7vw,12px);font-weight:700;color:#12304d;padding:1px 2px}
+.c i{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:clamp(10px,2.6vw,20px)}
+.pw{position:absolute;width:5.6%;height:5.6%;border-radius:50%;border:2px solid #fff;transform:translate(-50%,-50%);transition:left .22s,top .22s;display:flex;align-items:center;justify-content:center;color:#fff;font-size:clamp(8px,1.8vw,13px);font-weight:700;box-shadow:0 1px 4px #0006;z-index:3}
+#sp{flex:1 1 250px;display:flex;flex-direction:column;gap:8px}
+.pr{padding:6px 8px;border-radius:8px;margin-bottom:4px;background:#8882}
+#dc{font-size:60px;text-align:center;line-height:1}
+#lg{max-height:110px;overflow:auto;font-size:13px}
+#md{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;z-index:9;padding:12px}
+#md .card{max-width:520px;width:100%;max-height:90vh;overflow:auto}
+#ts{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:12px;z-index:30;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center;font-weight:700}
+.cf{position:fixed;top:-30px;z-index:20;font-size:24px;animation:fl 3s linear forwards}
+@keyframes fl{to{transform:translateY(110vh) rotate(360deg)}}
+</style></head><body><div class="w">
+<div id="menu" class="card" style="display:flex"><div style="font-size:44px">🐍🪜🎲💻</div><h1>Snake &amp; Ladder:<br>Informatika Adventure</h1><p>Ular tangga edukatif untuk SMP kelas 7, 8, dan 9</p>
+<button id="b1">▶ MULAI BERMAIN</button><button id="b2">📖 PANDUAN BERMAIN</button><button id="b3">⚙️ PENGATURAN</button><button id="b4">ℹ️ TENTANG GAME</button></div>
+<div id="setup" class="card"><h2>Pengaturan Permainan</h2>
+<select id="mode"><option value="solo">Solo (melawan AI)</option><option value="local">Local Multiplayer (1 perangkat)</option><option value="online" disabled>Online Multiplayer (belum dikonfigurasi)</option></select>
+<label id="cl">Jumlah lawan AI</label><select id="cnt"></select><div id="nms" style="display:flex;flex-direction:column;gap:6px;align-items:center;width:100%"></div>
+<button id="go">🎮 MULAI</button><button id="bk" style="background:#868e96">Kembali</button></div>
+<div id="game"><div id="bw"><div id="bd"><div id="gr"></div><svg id="sv" viewBox="0 0 100 100"></svg><div id="pn"></div></div></div>
+<div id="sp"><div class="card"><div id="tm" style="font-weight:700">⏱ 00:00</div><div id="tn">Giliran</div><div id="dc">🎲</div><button id="rb" style="width:100%;margin-top:6px" disabled>🎲 PUTAR DADU</button></div>
+<div class="card"><b>Pemain &amp; Inventory</b><div id="pl"></div><small>🛡️ Imunitas (aman dari tabrakan) · 🎲 Extra Roll (lempar ekstra giliran depan) · 🔰 Lucky Shield (kebal 1x ular/bom). Item dipakai otomatis.</small></div>
+<div class="card"><b>Aktivitas</b><div id="lg"></div></div>
+<div style="display:flex;gap:6px"><button id="sb">🔊 Suara</button><button id="hm" style="background:#868e96">🏠 Menu</button></div></div></div></div>
+<div id="md"><div class="card" id="mc"></div></div><div id="ts"></div>
+<script>
+const $=s=>document.querySelector(s),rnd=n=>Math.floor(Math.random()*n);let GEN=0;
+const sleep=ms=>{const g=GEN;return new Promise(r=>setTimeout(()=>{if(g==GEN)r()},ms))};
+const SN={98:79,93:68,87:49,64:42,62:19,54:34,47:26,36:6},LD={4:25,9:31,16:37,20:41,28:77,40:59,51:67,63:81,71:91},
+MY=[3,7,12,14,18,23,27,32,35,39,44,48,52,57,61,66,70,75,83,89,94],
+COL=['#e03131','#1c7ed6','#2f9e44','#f08c00','#9c36b5','#0b7285'],AIN=['Robo','Pixel','Bit','Byte','Nova'];
+// format: soal|jawaban benar|salah1|salah2|salah3|penjelasan
+const QB=`Perangkat untuk memasukkan data ke komputer disebut...|Perangkat input|Perangkat output|Perangkat memori|Perangkat jaringan|Keyboard dan mouse adalah contoh perangkat input.
+Contoh perangkat output adalah...|Monitor|Keyboard|Scanner|Mouse|Monitor menampilkan hasil pengolahan data.
+Bagian komputer yang memproses instruksi disebut...|CPU|Printer|Speaker|Webcam|CPU atau prosesor adalah otak komputer.
+Contoh sistem operasi adalah...|Windows|Google Chrome|Microsoft Word|Scratch|Sistem operasi mengelola perangkat keras dan aplikasi.
+Manusia yang mengoperasikan komputer disebut...|Brainware|Hardware|Software|Firmware|Brainware adalah pengguna atau operator sistem komputer.
+Alamat situs web diketik pada...|Address bar browser|Taskbar|Recycle Bin|Clipboard|Address bar adalah kolom alamat URL di browser.
+Kata sandi yang paling aman adalah...|Kombinasi huruf, angka, dan simbol yang panjang|Tanggal lahir|123456|Nama sendiri|Sandi yang sulit ditebak melindungi akun.
+Jaringan komputer di satu gedung sekolah disebut...|LAN|WAN|Satelit|Bluetooth|LAN mencakup area kecil seperti ruang atau gedung.
+Pesan palsu yang mencuri data akun disebut...|Phishing|Browsing|Streaming|Scrolling|Phishing menyamar sebagai pihak terpercaya.
+Rumus Excel untuk menjumlahkan A1 sampai A5...|=SUM(A1:A5)|=ADD(A1,A5)|=TOTAL(A1-A5)|=PLUS(A1:A5)|SUM menjumlahkan sebuah rentang sel.
+Rumus Excel untuk mencari nilai rata-rata adalah...|=AVERAGE|=MAX|=MIN|=COUNT|AVERAGE menghitung rata-rata.
+Urutan langkah logis untuk menyelesaikan masalah disebut...|Algoritma|Hardware|Virus|Cache|Algoritma adalah langkah sistematis penyelesaian masalah.
+Memecah masalah besar menjadi bagian kecil disebut...|Dekomposisi|Abstraksi|Enkripsi|Instalasi|Dekomposisi mempermudah masalah yang rumit.
+Mencari kesamaan atau keteraturan pada masalah disebut...|Pengenalan pola|Dekomposisi|Debugging|Formatting|Pola membantu menemukan solusi yang bisa dipakai ulang.
+Mengambil hal penting dan mengabaikan detail disebut...|Abstraksi|Dekomposisi|Instalasi|Kompresi|Abstraksi menyederhanakan masalah.
+Bilangan biner hanya menggunakan angka...|0 dan 1|1 dan 2|0 sampai 9|A dan B|Biner adalah sistem basis dua.
+Bilangan biner 101 sama dengan desimal...|5|3|6|7|1x4 + 0x2 + 1x1 = 5.
+Blok Scratch jika...maka termasuk...|Percabangan|Perulangan|Variabel|Suara|Percabangan memilih aksi berdasarkan kondisi.
+Perulangan ulangi 10 kali berguna untuk...|Mengulang perintah tanpa menulis berkali-kali|Menghapus program|Mengganti nama sprite|Mematikan komputer|Perulangan membuat program ringkas.
+Contoh kecerdasan buatan adalah...|Asisten suara yang memahami perintah|Kalkulator biasa|Kabel LAN|Mouse|AI dapat belajar dan mengenali pola.
+Sebelum membagikan berita di grup, sebaiknya...|Cek kebenarannya dahulu|Langsung sebarkan|Tambah judul heboh|Abaikan sumbernya|Verifikasi mencegah penyebaran hoaks.
+Penyimpanan file jangka panjang paling tepat di...|Flashdisk atau hard disk|RAM|Cache|Register|RAM hanya menyimpan data sementara.
+Temanmu diejek di grup chat. Sikap yang tepat...|Menegur atau melapor, tidak ikut menyebarkan|Ikut mengejek|Menyebarkan tangkapan layar|Diam dan tertawa|Etika digital: hormati orang lain.
+Kumpulan nilai berurutan dengan nomor indeks disebut...|Array atau daftar|Router|Monitor|Printer|Array adalah struktur data sederhana.
+Dalam Scratch, variabel digunakan untuk...|Menyimpan nilai seperti skor|Mengganti latar|Mencetak dokumen|Mematikan sprite|Variabel menyimpan data yang bisa berubah.
+Perangkat yang meneruskan data antar jaringan adalah...|Router|Keyboard|Speaker|Webcam|Router mengarahkan paket data.
+Di Microsoft Word, huruf tebal dibuat dengan...|Bold|Paste|Undo|Zoom|Bold menebalkan teks.
+Data yang sudah diolah sehingga bermakna disebut...|Informasi|Virus|Hardware|Cookie|Informasi adalah data yang bermakna.
+Budi menerima pesan: Menang hadiah! Klik link dan isi sandi. Tindakan tepat...|Tidak klik dan melaporkan pesan|Klik lalu isi sandi|Teruskan ke semua teman|Balas dengan sandi|Itu ciri phishing.
+Program: x=3; jika x>5 tampil Besar, jika tidak tampil Kecil. Hasilnya...|Kecil|Besar|3|Error|3 tidak lebih besar dari 5.`.split('\n').map(l=>l.split('|'));
+let G={snd:true,used:[]},mode='solo',ac;
+function beep(f,d=.1,t='sine'){if(!G.snd)return;try{ac=ac||new AudioContext();const o=ac.createOscillator(),g=ac.createGain();o.type=t;o.frequency.value=f;g.gain.value=.07;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}catch(e){}}
+function xy(n){let r=Math.floor((n-1)/10),c=(n-1)%10;if(r%2)c=9-c;return[c*10+5,(9-r)*10+5]}
+function snake(h,t,i){const[a,b]=xy(h),[c,d]=xy(t),col=['#2fb344','#e03131','#f5c518','#228be6'][i%4],dx=c-a,dy=d-b,L=Math.hypot(dx,dy),nx=-dy/L*4,ny=dx/L*4,
+p=`M${a} ${b}C${a+dx/3+nx} ${b+dy/3+ny} ${a+2*dx/3-nx} ${b+2*dy/3-ny} ${c} ${d}`;
+return`<path d="${p}" fill="none" stroke="${col}" stroke-width="2.6" stroke-linecap="round"/><path d="${p}" fill="none" stroke="#fff9" stroke-width="2.6" stroke-dasharray=".6 1.6"/><circle cx="${a}" cy="${b}" r="2.3" fill="${col}"/><circle cx="${a-.9}" cy="${b-.5}" r=".7" fill="#fff"/><circle cx="${a+.9}" cy="${b-.5}" r=".7" fill="#fff"/><circle cx="${a-.9}" cy="${b-.5}" r=".3"/><circle cx="${a+.9}" cy="${b-.5}" r=".3"/><path d="M${a} ${b+2}v1.5" stroke="#d00" stroke-width=".4"/>`}
+function ladder(f,t,i){const[a,b]=xy(f),[c,d]=xy(t),L=Math.hypot(c-a,d-b),nx=-(d-b)/L*1.3,ny=(c-a)/L*1.3,col=['#a0622d','#c98a4b','#7a4a21'][i%3];
+let s=`<line x1="${a+nx}" y1="${b+ny}" x2="${c+nx}" y2="${d+ny}" stroke="${col}" stroke-width=".9"/><line x1="${a-nx}" y1="${b-ny}" x2="${c-nx}" y2="${d-ny}" stroke="${col}" stroke-width=".9"/>`;
+for(let k=1;k<L/3.2;k++){const u=k*3.2/L,x=a+(c-a)*u,y=b+(d-b)*u;s+=`<line x1="${x+nx}" y1="${y+ny}" x2="${x-nx}" y2="${y-ny}" stroke="${col}" stroke-width=".7"/>`}return s}
+function build(){let h='';for(let y=9;y>=0;y--)for(let c=0;c<10;c++){const n=y*10+(y%2?9-c:c)+1,m=MY.includes(n);h+=`<div class="c" style="background:${m?'#ffe066':['#c7f0d8','#fff3bf','#d0ebff','#ffd8e8'][(y+c)%4]}">${n==1?'START':n==100?'FINISH':n}${m?'<i>🎁</i>':''}</div>`}
+$('#gr').innerHTML=h;let s='';Object.keys(LD).forEach((k,i)=>s+=ladder(+k,LD[k],i));Object.keys(SN).forEach((k,i)=>s+=snake(+k,SN[k],i));$('#sv').innerHTML=s}
+const modal=h=>{$('#md').style.display='flex';$('#mc').innerHTML=h},hide=()=>$('#md').style.display='none';
+const wait=id=>new Promise(r=>$(id).onclick=r);
+function toast(t){const e=$('#ts');e.textContent=t;e.style.opacity=1;setTimeout(()=>e.style.opacity=0,1800)}
+function log(t){$('#lg').insertAdjacentHTML('afterbegin',`<div>• ${t}</div>`)}
+function fmt(){let s=Math.floor(((G.end||Date.now())-G.t0)/1000);const h=Math.floor(s/3600),m=Math.floor(s%3600/60),z=x=>String(x).padStart(2,'0');s%=60;return(h?z(h)+':':'')+z(m)+':'+z(s)}
+function place(){const c={};G.ps.forEach(p=>{const[x,y]=xy(p.pos),k=c[p.pos]=(c[p.pos]||0)+1;p.el.style.left=x+(k-1)*1.8-1+'%';p.el.style.top=y+(k-1)*1.8+'%'});ui()}
+function ui(){$('#pl').innerHTML=G.ps.map((p,i)=>`<div class="pr" style="border-left:8px solid ${p.c};${i==G.turn?'font-weight:700;background:#ffd43b55':''}">${i==G.turn?'▶ ':''}${p.n}${p.ai?' 🤖':''} · kotak ${p.pos}<br>🛡️${p.im} 🎲${p.ex} 🔰${p.sh}</div>`).join('')}
+async function rollDice(){const F='⚀⚁⚂⚃⚄⚅';for(let i=0;i<12;i++){$('#dc').textContent=F[rnd(6)];beep(300+rnd(200),.04);await sleep(100)}const d=1+rnd(6);$('#dc').textContent=F[d-1];return d}
+async function turn(){const g=G;if(g.over)return;const p=g.ps[g.turn];ui();let n=1+(p.ex>0?(p.ex--,1):0);
+for(let i=0;i<n&&!g.over;i++){const rb=$('#rb');rb.disabled=p.ai;$('#tn').textContent='Giliran: '+p.n+(n>1?` (lemparan ${i+1}/${n})`:'');
+if(p.ai)await sleep(800);else await new Promise(r=>rb.onclick=r);rb.disabled=true;await play(p,await rollDice())}
+if(g.over)return;g.turn=(g.turn+1)%g.ps.length;turn()}
+async function play(p,d){log(`${p.n} melempar dadu: ${d}`);
+if(p.pos+d<=100){for(let i=0;i<d;i++){p.pos++;place();beep(440+i*30,.06);await sleep(230)}}else{log('Melewati 100, pion tetap di tempat');await sleep(600)}
+if(p.pos==100)return win(p);const s=p.pos;
+if(LD[s]){p.st.l++;toast('LUAR BIASA! KAMU MENEMUKAN TANGGA!');log(`Tangga: ${s} → ${LD[s]}`);beep(700,.3);await sleep(600);p.pos=LD[s];place();await sleep(900)}
+else if(SN[s]){p.st.s++;if(p.sh>0){p.sh--;toast('🔰 Lucky Shield melindungi dari ular!');log('Perisai menahan gigitan ular')}else{toast('WADUH! KAMU DIGIGIT ULAR!');log(`Ular: ${s} → ${SN[s]}`);beep(150,.4,'sawtooth');await sleep(600);p.pos=SN[s];place()}await sleep(900)}
+else if(MY.includes(s))await mystery(p);
+if(G.over)return;await collide(p);if(p.pos==100)win(p)}
+async function collide(p){if(p.pos<=1||p.pos>=100)return;for(const q of G.ps.filter(o=>o!==p&&o.pos==p.pos)){if(p.im>0||q.im>0){(p.im>0?p:q).im--;toast('🛡️ Imunitas aktif! Pion berdampingan');log('Imunitas dipakai')}else{q.pos=1;toast(q.n+' tertabrak, kembali ke START!');log(q.n+' kembali ke START');beep(200,.3)}place();await sleep(800)}}
+function pick(){let a=QB.map((_,i)=>i).filter(i=>!G.used.includes(i));if(!a.length){G.used=[];a=QB.map((_,i)=>i)}const i=a[rnd(a.length)];G.used.push(i);const[q,c,...r]=QB[i],ex=r.pop(),o=[c,...r].map((t,j)=>[t,j==0]).sort(()=>Math.random()-.5);return[q,o.map(x=>x[0]),o.findIndex(x=>x[1]),ex]}
+function ask(p,q,o,k,ex){return new Promise(res=>{modal(`<h3>📚 Soal untuk ${p.n}</h3><p>${q}</p>${o.map((t,i)=>`<button class="o" data-i="${i}" style="display:block;width:100%;margin:6px 0;background:#4c6ef5;text-align:left">${'ABCD'[i]}. ${t}</button>`).join('')}<div id="fb"></div>`);
+let done=false;const fin=async i=>{if(done)return;done=true;const ok=i==k;beep(ok?800:200,.3);
+document.querySelectorAll('.o').forEach((b,j)=>{b.disabled=true;if(j==k)b.style.background='#2f9e44';else if(j==i)b.style.background='#e03131'});
+$('#fb').innerHTML=`<h3 style="color:${ok?'#2f9e44':'#e03131'}">${ok?'✅ BENAR!':'❌ JAWABAN KURANG TEPAT'}</h3><p>Jawaban benar: <b>${'ABCD'[k]}</b>. ${ex}</p>`+(p.ai?'':'<button id="nx">Lanjut</button>');
+if(p.ai)await sleep(1800);else await wait('#nx');res(ok)};
+document.querySelectorAll('.o').forEach(b=>b.onclick=()=>{if(!p.ai)fin(+b.dataset.i)});
+if(p.ai)sleep(1500).then(()=>fin(Math.random()<.55?k:(k+1+rnd(3))%4))})}
+async function mystery(p){p.st.m++;toast('🎁 KOTAK MISTERI!');beep(600,.2);await sleep(700);const[q,o,k,ex]=pick();
+if(await ask(p,q,o,k,ex)){p.st.c++;await gacha(p)}else{p.st.w++;log(p.n+' salah menjawab, tanpa hadiah')}hide()}
+const GC=[['im',25,'🛡️','Imunitas (2x pakai)'],['ex',15,'🎲','Extra Roll'],['fw',25,'⏩','Bonus Maju'],['bk',15,'⏪','Mundur'],['bm',10,'💣','BOM!'],['sh',10,'🔰','Lucky Shield']];
+async function gacha(p){let r=rnd(100),g=GC[0];for(const x of GC){if(r<x[1]){g=x;break}r-=x[1]}
+modal('<h3 style="text-align:center">🎁 Membuka peti...</h3><div id="gx" style="font-size:64px;text-align:center"></div><p id="gt" style="text-align:center;font-weight:700"></p>');
+for(let i=0;i<14;i++){$('#gx').textContent=GC[i%6][2];beep(500+i*20,.05);await sleep(100)}
+$('#gx').textContent=g[2];$('#gt').textContent=g[3];p.st.g++;log(`${p.n} mendapat ${g[3]}`);await sleep(900);const k=[2,3,5][rnd(3)];let m='';
+if(g[0]=='im')p.im+=2;else if(g[0]=='ex'){if(p.ex<2)p.ex++;else m='(penuh, maks 2)'}
+else if(g[0]=='fw'){m='+'+k;if(p.pos+k<=100)p.pos+=k;else m+=' (melebihi 100, tetap)'}
+else if(g[0]=='bk'){m='-'+k;p.pos=Math.max(1,p.pos-k)}
+else if(g[0]=='bm'){if(p.sh>0){p.sh--;m='Lucky Shield menyelamatkanmu!'}else{$('#gx').textContent='💥';toast('BOOM! KAMU TERKENA BOM!');beep(90,.5,'sawtooth');p.pos=1;await sleep(800)}}
+else p.sh++;
+$('#gt').textContent=g[3]+' '+m;place();await sleep(900);hide()}
+function win(p){G.over=true;G.end=Date.now();clearInterval(G.iv);beep(900,.5);
+modal(`<div style="text-align:center"><h1>🎉 CONGRATULATIONS! 🎉</h1><h2>PEMENANG: ${p.n}</h2><div class="pw" style="position:static;display:inline-flex;transform:none;width:38px;height:38px;background:${p.c}">${p.n[0].toUpperCase()}</div><p>Posisi akhir: ${p.pos}<br>TOTAL WAKTU: <b>${fmt()}</b></p><p>🐍 Ular: ${p.st.s} · 🪜 Tangga: ${p.st.l} · 🎁 Misteri: ${p.st.m}<br>✅ Benar: ${p.st.c} · ❌ Salah: ${p.st.w} · 🏆 Hadiah: ${p.st.g}</p><button id="again">MAIN LAGI</button> <button id="home" style="background:#868e96">KEMBALI KE MENU UTAMA</button></div>`);
+for(let i=0;i<50;i++){const s=document.createElement('span');s.className='cf';s.textContent=['🎉','✨','🎊','⭐'][i%4];s.style.left=rnd(100)+'%';s.style.animationDelay=Math.random()*2+'s';document.body.appendChild(s);setTimeout(()=>s.remove(),5500)}
+$('#again').onclick=()=>{hide();begin(G.cfg)};$('#home').onclick=()=>{hide();show('menu')}}
+function show(id){GEN++;clearInterval(G.iv);hide();['menu','setup','game'].forEach(s=>$('#'+s).style.display=s==id?'flex':'none')}
+function begin(cfg){show('game');G={snd:G.snd,used:[],cfg,turn:0,t0:Date.now(),ps:cfg.map((x,i)=>({n:x[0],ai:x[1],c:COL[i],pos:1,im:0,ex:0,sh:0,st:{s:0,l:0,m:0,c:0,w:0,g:0}}))};
+build();$('#pn').innerHTML='';$('#lg').innerHTML='';G.ps.forEach(p=>{p.el=document.createElement('div');p.el.className='pw';p.el.style.background=p.c;p.el.textContent=p.n[0].toUpperCase();$('#pn').appendChild(p.el)});place();
+G.iv=setInterval(()=>$('#tm').textContent='⏱ '+fmt(),500);turn()}
+function cnts(){const m=$('#mode').value;$('#cnt').innerHTML=(m=='solo'?[1,2,3,4,5]:[2,3,4,5,6]).map(i=>`<option>${i}</option>`).join('');$('#cl').textContent=m=='solo'?'Jumlah lawan AI':'Jumlah pemain';names()}
+function names(){const m=$('#mode').value,n=+$('#cnt').value;let h='';if(m=='solo')h='<input id="n0" value="Pemain 1" maxlength="12" aria-label="Namamu">';else for(let i=0;i<n;i++)h+=`<input id="n${i}" value="Pemain ${i+1}" maxlength="12">`;$('#nms').innerHTML=h}
+$('#mode').onchange=cnts;$('#cnt').onchange=names;cnts();
+$('#go').onclick=()=>{const m=$('#mode').value,n=+$('#cnt').value,nm=i=>($('#n'+i)?.value.trim()||'Pemain '+(i+1));let c=[];
+if(m=='solo'){c.push([nm(0),0]);for(let i=0;i<n;i++)c.push([AIN[i],1])}else for(let i=0;i<n;i++)c.push([nm(i),0]);begin(c)};
+$('#b1').onclick=()=>show('setup');$('#bk').onclick=()=>show('menu');$('#hm').onclick=()=>show('menu');
+const snd=()=>{G.snd=!G.snd;$('#sb').textContent=G.snd?'🔊 Suara':'🔇 Suara'};$('#sb').onclick=snd;
+const info=h=>{modal(h+'<br><button id="cl2">Tutup</button>');$('#cl2').onclick=hide};
+$('#b2').onclick=()=>info('<h3>📖 Panduan</h3><p>Putar dadu dan jalankan pionmu dari kotak 1 ke 100. Tangga membawa naik, ular membawa turun. Angka 6 tidak memberi lemparan tambahan, dan jika melewati 100 pion tetap di tempat.</p><p>Berhenti <b>tepat</b> di kotak 🎁 untuk menjawab 1 soal Informatika. Jika benar, kamu mengundi hadiah: Imunitas, Extra Roll, Maju, Mundur, Bom, atau Lucky Shield.</p><p>Jika berhenti di kotak yang sudah dihuni pion lain, pion itu kembali ke START, kecuali ada yang memiliki Imunitas.</p>');
+$('#b3').onclick=()=>{info('<h3>⚙️ Pengaturan</h3><button id="sn">'+(G.snd?'🔊 Suara aktif':'🔇 Suara mati')+'</button>');$('#sn').onclick=()=>{snd();$('#sn').textContent=G.snd?'🔊 Suara aktif':'🔇 Suara mati'}};
+$('#b4').onclick=()=>info('<h3>ℹ️ Tentang</h3><p>Snake &amp; Ladder: Informatika Adventure. Game edukasi Informatika untuk SMP kelas 7 sampai 9. Berjalan di browser tanpa instalasi dan tanpa internet setelah dimuat.</p>');
+</script></body></html>
